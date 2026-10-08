@@ -1,0 +1,27 @@
+# Ignore everything by default
+*
+
+# Allow folders to be traversed
+!*/
+
+# Allow source code and documentation
+!*.ps1
+!*.md
+!.gitignore
+
+# Allow curated text examples only
+!examples/*.txt
+
+# Never publish generated or personal data
+BatchLists/
+MergedBatches/
+NormalizedBatches/
+NormalizedWork/
+NormalizedLogs/
+Logs/
+*.csv
+*.mp4
+*.mov
+*.avi
+*.3gp
+*.mkv
