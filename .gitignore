@@ -19,6 +19,7 @@ NormalizedBatches/
 NormalizedWork/
 NormalizedLogs/
 InventoryReports/
+BatchPlan/
 Logs/
 *.csv
 *.mp4
