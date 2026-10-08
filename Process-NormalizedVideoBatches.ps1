@@ -8,7 +8,7 @@ param(
     [string]$Preset = 'medium'
 )
 $ErrorActionPreference = 'Stop'
-$base = 'E:\LenovoLaptop\Personnel\Videos\IpadUpload - Copy\VideoLists'
+$base = $PSScriptRoot
 $listDir = Join-Path $base 'BatchLists'
 $outDir = Join-Path $base 'NormalizedBatches'
 $workDir = Join-Path $base 'NormalizedWork'

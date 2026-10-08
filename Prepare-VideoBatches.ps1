@@ -1,5 +1,6 @@
 # Prepare compatible ~5 GiB FFmpeg batches. Does NOT merge, move, or delete sources.
-$root = 'E:\LenovoLaptop\Personnel\Videos\IpadUpload - Copy'
+$work = $PSScriptRoot
+$root = Split-Path -Parent $work
 $work = Join-Path $root 'VideoLists'
 $lists = Join-Path $work 'BatchLists'
 $output = Join-Path $work 'MergedBatches'

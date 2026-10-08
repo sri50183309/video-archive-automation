@@ -1,5 +1,5 @@
 
-$base = "E:\LenovoLaptop\Personnel\Videos\IpadUpload - Copy\VideoLists"
+$base = $PSScriptRoot
 $listFolder = Join-Path $base "BatchLists"
 $outputFolder = Join-Path $base "MergedBatches"
 $logFolder = Join-Path $base "Logs"
