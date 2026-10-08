@@ -18,6 +18,7 @@ MergedBatches/
 NormalizedBatches/
 NormalizedWork/
 NormalizedLogs/
+InventoryReports/
 Logs/
 *.csv
 *.mp4
