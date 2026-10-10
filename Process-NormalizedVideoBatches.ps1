@@ -14,6 +14,7 @@ $outDir = Join-Path $base 'NormalizedBatches'
 $workDir = Join-Path $base 'NormalizedWork'
 $logDir = Join-Path $base 'NormalizedLogs'
 $report = Join-Path $base 'normalized_results.csv'
+$timingReport = Join-Path $base 'processing_times.csv'
 foreach ($dir in @($outDir,$workDir,$logDir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
 foreach ($tool in @('ffmpeg','ffprobe')) { if (-not (Get-Command $tool -ErrorAction SilentlyContinue)) { throw "$tool not found on PATH" } }
 if ($Crf -lt 0 -or $Crf -gt 51) { throw 'CRF must be between 0 and 51' }
@@ -37,6 +38,24 @@ function Write-Result([string]$Name,[string]$Status,[int]$Clips,[string]$Output,
     }
     $row | Export-Csv -LiteralPath $report -NoTypeInformation -Append
 }
+function Write-Timing([string]$Name,[string]$Stage,[int]$Clip,[string]$Action,[datetime]$Started,[datetime]$Finished,[string]$Status,[string]$Source,[string]$Output) {
+    $row = [pscustomobject]@{
+        Batch = $Name
+        Stage = $Stage
+        Clip = $Clip
+        Action = $Action
+        StartedAt = $Started.ToString('o')
+        FinishedAt = $Finished.ToString('o')
+        ElapsedSeconds = [math]::Round(($Finished - $Started).TotalSeconds, 2)
+        Status = $Status
+        Source = $Source
+        Output = $Output
+        SizeGiB = if ($Output -and (Test-Path -LiteralPath $Output -PathType Leaf)) {
+            [math]::Round((Get-Item -LiteralPath $Output).Length / 1GB, 3)
+        } else { 0 }
+    }
+    $row | Export-Csv -LiteralPath $timingReport -NoTypeInformation -Append
+}
 function Read-List([string]$Path) {
     $paths = New-Object 'System.Collections.Generic.List[string]'
     foreach ($line in (Get-Content -LiteralPath $Path)) {
@@ -45,7 +64,7 @@ function Read-List([string]$Path) {
             $paths.Add($p)
         }
     }
-    return $paths.ToArray()
+    return ,$paths.ToArray()
 }
 
 $lists = if ($All) {
@@ -56,7 +75,7 @@ $lists = if ($All) {
 
 foreach ($list in $lists) {
     $name = $list.BaseName
-    $sources = @(Read-List $list.FullName)
+    $sources = Read-List $list.FullName
     if ($sources.Count -lt 2) { Write-Host "SKIP $name : fewer than 2 clips"; continue }
     $final = Join-Path $outDir "$name.mp4"
     $batchLogDir = Join-Path $logDir $name
@@ -72,7 +91,8 @@ foreach ($list in $lists) {
         }
         continue
     }
-    Write-Host "NORMALIZING $name ($($sources.Count) clips)" -ForegroundColor Cyan
+    $batchStarted = Get-Date
+    Write-Host "[$($batchStarted.ToString('HH:mm:ss'))] NORMALIZING $name ($($sources.Count) clips)" -ForegroundColor Cyan
     $segments = New-Object 'System.Collections.Generic.List[string]'
     $failed = $null
     for ($i = 0; $i -lt $sources.Count; $i++) {
@@ -82,7 +102,13 @@ foreach ($list in $lists) {
         $partial = Join-Path $batchWorkDir ('clip_{0:D4}.partial.mp4' -f ($i+1))
         $log = Join-Path $batchLogDir ('clip_{0:D4}.log' -f ($i+1))
         if (Test-Path -LiteralPath $segment) {
-            if (Test-Video $segment) { $segments.Add($segment); Write-Host "  Reuse clip $($i+1)"; continue }
+            if (Test-Video $segment) {
+                $reuseTime = Get-Date
+                $segments.Add($segment)
+                Write-Host "  [$($reuseTime.ToString('HH:mm:ss'))] Reuse clip $($i+1)"
+                Write-Timing $name 'Clip' ($i+1) 'Reuse' $reuseTime $reuseTime 'Success' $src $segment
+                continue
+            }
             $failed = "Invalid cached clip: $segment (inspect/remove manually)"; break
         }
         if (Test-Path -LiteralPath $partial) { Remove-Item -LiteralPath $partial -Force }
@@ -102,27 +128,29 @@ foreach ($list in $lists) {
         $args += @('-vf',$vf,'-c:v','libx264','-preset',$Preset,'-crf',"$Crf",'-r','30',
             '-video_track_timescale','30000','-c:a','aac','-b:a','160k','-ar','48000','-ac','2',
             '-af','aresample=async=1:first_pts=0','-movflags','+faststart','-f','mp4',$partial)
-        Write-Host "  Encoding clip $($i+1)/$($sources.Count)"
-        # $process = Start-Process -FilePath "ffmpeg.exe" -ArgumentList $args -Wait -PassThru -NoNewWindow -RedirectStandardError $log
-		# $ffmpegExitCode = $process.ExitCode
-		$previousPreference = $ErrorActionPreference
-		try {
-			$ErrorActionPreference = 'Continue'
-			& ffmpeg @args 2> $log
-			$ffmpegExitCode = $LASTEXITCODE
-		}
-		finally {
-			$ErrorActionPreference = $previousPreference
-		}		
+        $clipStarted = Get-Date
+        Write-Host "  [$($clipStarted.ToString('HH:mm:ss'))] Encoding clip $($i+1)/$($sources.Count)"
+        $previousPreference = $ErrorActionPreference
+        try {
+            $ErrorActionPreference = 'Continue'
+            & ffmpeg @args 2> $log
+            $ffmpegExitCode = $LASTEXITCODE
+        }
+        finally { $ErrorActionPreference = $previousPreference }
+        $clipFinished = Get-Date
         if ($ffmpegExitCode -ne 0 -or -not (Test-Video $partial)) {
+            Write-Timing $name 'Clip' ($i+1) 'Encode' $clipStarted $clipFinished 'Failed' $src $partial
             $failed = "FFmpeg failed clip $($i+1): $src (see $log)"; break
         }
         Move-Item -LiteralPath $partial -Destination $segment
         $segments.Add($segment)
+        Write-Timing $name 'Clip' ($i+1) 'Encode' $clipStarted $clipFinished 'Success' $src $segment
+        Write-Host "  [$($clipFinished.ToString('HH:mm:ss'))] Completed clip $($i+1) in $([math]::Round(($clipFinished - $clipStarted).TotalSeconds,1)) sec"
     }
     if ($failed) {
         Write-Warning "$name : $failed"
         Write-Result $name 'Failed' $sources.Count $final $failed
+        Write-Timing $name 'Batch' 0 'Process' $batchStarted (Get-Date) 'Failed' '' $final
         continue
     }
     $concatList = Join-Path $batchWorkDir 'normalized_concat.txt'
@@ -131,30 +159,34 @@ foreach ($list in $lists) {
     $mergedPartial = Join-Path $outDir "$name.partial.mp4"
     if (Test-Path -LiteralPath $mergedPartial) { Remove-Item -LiteralPath $mergedPartial -Force }
     $mergeLog = Join-Path $batchLogDir 'merge.log'
-    # & ffmpeg -nostdin -hide_banner -y -f concat -safe 0 -i $concatList -map '0:v:0' -map '0:a:0' -c copy -movflags '+faststart' $mergedPartial *> $mergeLog
-	# & ffmpeg -nostdin -hide_banner -y -f concat -safe 0 -i $concatList -map '0:v:0' -map '0:a:0' -c copy -movflags '+faststart' -f mp4 $mergedPartial 2>&1 | Out-File -FilePath $mergeLog	
-	$previousPreference = $ErrorActionPreference
-	try {
-		$ErrorActionPreference = 'Continue'
-
-		& ffmpeg -nostdin -hide_banner -y `
-			-f concat -safe 0 -i $concatList `
-			-map '0:v:0' -map '0:a:0' `
-			-c copy -movflags '+faststart' `
-			-f mp4 $mergedPartial 2> $mergeLog
-
-		$mergeExitCode = $LASTEXITCODE
-	}
-	finally {
-		$ErrorActionPreference = $previousPreference
-	}
+    $mergeStarted = Get-Date
+    Write-Host "[$($mergeStarted.ToString('HH:mm:ss'))] Starting final merge"
+    $previousPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = 'Continue'
+        & ffmpeg -nostdin -hide_banner -y `
+            -f concat -safe 0 -i $concatList `
+            -map '0:v:0' -map '0:a:0' `
+            -c copy -movflags '+faststart' `
+            -f mp4 $mergedPartial 2> $mergeLog
+        $mergeExitCode = $LASTEXITCODE
+    }
+    finally { $ErrorActionPreference = $previousPreference }
+    $mergeFinished = Get-Date
     if ($mergeExitCode -eq 0 -and (Test-Video $mergedPartial)) {
         Move-Item -LiteralPath $mergedPartial -Destination $final
+        Write-Timing $name 'Merge' 0 'Copy' $mergeStarted $mergeFinished 'Success' $concatList $final
         Write-Host "CREATED $final" -ForegroundColor Green
         Write-Result $name 'Created-needs-playback-check' $sources.Count $final 'Review transitions, audio, orientation; confirm OneDrive backup before cleanup'
     } else {
+        Write-Timing $name 'Merge' 0 'Copy' $mergeStarted $mergeFinished 'Failed' $concatList $mergedPartial
         Write-Warning "Merge failed for $name. See $mergeLog"
         Write-Result $name 'Failed-merge' $sources.Count $final "See $mergeLog"
     }
+    $batchFinished = Get-Date
+    $batchStatus = if (Test-Path -LiteralPath $final) { 'Created-needs-validation' } else { 'Failed' }
+    Write-Timing $name 'Batch' 0 'Process' $batchStarted $batchFinished $batchStatus '' $final
+    Write-Host "[$($batchFinished.ToString('HH:mm:ss'))] $name elapsed: $([math]::Round(($batchFinished - $batchStarted).TotalMinutes,1)) min"
 }
+Write-Host "Timing report: $timingReport"
 Write-Host "Done. Report: $report" -ForegroundColor Cyan

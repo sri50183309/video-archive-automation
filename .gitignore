@@ -20,10 +20,19 @@ NormalizedWork/
 NormalizedLogs/
 InventoryReports/
 BatchPlan/
+LegacyArchive/
+LegacyBatchLists/
 Logs/
 *.csv
 *.mp4
 *.mov
 *.avi
 *.3gp
-*.mkv
+*.mkvProcess-NormalizedVideoBatches.backup.ps1
+Process-NormalizedVideoBatches.ps1..ps1
+Process-NormalizedVideoBatches.timing-backup.ps1
+
+# Local processing script backups
+/Process-NormalizedVideoBatches.backup.ps1
+/Process-NormalizedVideoBatches.ps1..ps1
+/Process-NormalizedVideoBatches.timing-backup.ps1
