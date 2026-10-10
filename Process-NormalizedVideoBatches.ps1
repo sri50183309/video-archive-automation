@@ -129,7 +129,7 @@ foreach ($list in $lists) {
             '-video_track_timescale','30000','-c:a','aac','-b:a','160k','-ar','48000','-ac','2',
             '-af','aresample=async=1:first_pts=0','-movflags','+faststart','-f','mp4',$partial)
         $clipStarted = Get-Date
-        Write-Host "  [$($clipStarted.ToString('HH:mm:ss'))] Encoding clip $($i+1)/$($sources.Count)"
+		Write-Host "  [$($clipStarted.ToString('HH:mm:ss'))] Encoding clip $($i+1)/$($sources.Count) | $([System.IO.Path]::GetFileName($src))"
         $previousPreference = $ErrorActionPreference
         try {
             $ErrorActionPreference = 'Continue'
@@ -145,7 +145,7 @@ foreach ($list in $lists) {
         Move-Item -LiteralPath $partial -Destination $segment
         $segments.Add($segment)
         Write-Timing $name 'Clip' ($i+1) 'Encode' $clipStarted $clipFinished 'Success' $src $segment
-        Write-Host "  [$($clipFinished.ToString('HH:mm:ss'))] Completed clip $($i+1) in $([math]::Round(($clipFinished - $clipStarted).TotalSeconds,1)) sec"
+		Write-Host "  [$($clipFinished.ToString('HH:mm:ss'))] Completed clip $($i+1) in $([math]::Round(($clipFinished - $clipStarted).TotalSeconds,1)) sec | $([System.IO.Path]::GetFileName($src))"
     }
     if ($failed) {
         Write-Warning "$name : $failed"
