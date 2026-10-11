@@ -54,3 +54,57 @@ These files were flagged by metadata inspection; only SAM_0235.MP4 has a confirm
 - Preserve the original processing lists, caches, and logs.
 - Keep personal media and absolute local filesystem paths out of Git.
 - Do not permanently delete retired originals without verified independent backups.
+
+## Final Recovery Completion — October 11, 2026
+
+### Recovery Outcome
+
+The video archive recovery project has successfully accounted for all **661 original video recordings**.
+
+- **647 videos** were successfully processed into the original archive and recovery batches.
+- **14 outlier videos** required additional processing because of incompatible or unusual video metadata.
+- The outliers were recovered using FFmpeg with explicit BT.709 color metadata and video normalization.
+- All 14 converted outlier clips were combined into `Batch_011_Outliers.mp4`.
+- The merged outlier batch passed a full video decoding test with **exit code 0** and manual playback verification.
+
+### Final Archive
+
+The completed archive contains **12 consolidated MP4 files**:
+
+- `Batch_001.mp4` through `Batch_010.mp4`
+- `Batch_011_Recovery.mp4`
+- `Batch_011_Outliers.mp4`
+
+All 12 files were confirmed present in the `IPAD Converted Videos` folder, with a combined size of approximately **22.33 GiB**.
+
+### Original File Preservation
+
+All **661 original recordings**, together with the **14 individually converted outlier clips**, have been moved into the `ToBeDeleted` holding folder.
+
+Final verification confirmed:
+
+- **675 files** in `ToBeDeleted`
+- **28 entries** in the outlier relocation manifest
+- **0 missing destination files**
+- **0 files remaining at their previous source paths**
+
+Two reversible relocation manifests are preserved:
+
+- `ToBeDeleted_MoveManifest.csv`
+- `Outliers_MoveManifest.csv`
+
+**No permanent deletion has been performed.** Original recordings must remain preserved until an independent archive backup has been completed and verified.
+
+### Lessons Learned
+
+This recovery demonstrated the importance of treating unusual media metadata as a compatibility problem rather than immediately assuming the recordings were damaged.
+
+The workflow followed a cautious, repeatable principle:
+
+**Select → Verify → Modify → Verify Again**
+
+AI-assisted troubleshooting helped identify the FFmpeg color metadata issue, develop a workaround, and automate the recovery process. Human judgment remained essential for playback verification, file preservation, and approval of potentially destructive operations.
+
+**Final status: Recovery complete. Independent backup verification pending.**
+
+**JAI GPT! JAI ZERO!**
