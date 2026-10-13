@@ -149,11 +149,36 @@ Run the full operation only after testing a small batch and confirming sufficien
 4. **Design long-running workflows to recover from interruptions.**
 5. **Never confuse a successful command with a verified result.**
 
-## Current Status
+## Archive Engine V2 and Multi-Folder Orchestrator V3
 
-The batch-merging and normalization workflows have been tested successfully on selected recordings.
+The repository also includes a newer SHA256-inventory-driven workflow, separate from the earlier metadata-compatible batch scripts:
 
-Further improvements may include stronger output validation, automated size enforcement, and a complete metadata-report generation script.
+| Script | Role |
+|---|---|
+| `scripts/reusable/VideoArchive-v2.ps1` | Prepare source inventory and group plans; encode and validate archive groups |
+| `scripts/reusable/VideoArchive-v3.ps1` | Orchestrate V2 across independent folders, stop on failure, and allow configurable cooling periods |
+| `scripts/reusable/Move-VideoOriginalsToBeDeleted.ps1` | **Specific, one-time** reversible relocation for BalVihar and ShravanSportsVideos after review; not a generic cleanup command |
+
+V3 uses explicit plan approval before `RunAll`; its default parameters are 12 minutes and 5 clips per group, both configurable. Review each generated plan before approving it. Do not assume that a process exit or an existing output file alone proves successful playback.
+
+The dedicated relocation script has a `Preview` mode that checks expected inventory, archive outputs, manifest/plan hashes, and each source SHA256 before any move. In `Move` mode it journals relocation and checks SHA256 again at the destination. It **does not permanently delete files**. If interrupted during relocation, inspect the journal and destination folders before attempting any retry; it is not automatically crash-resumable.
+
+### Recorded project results (through October 13, 2026)
+
+| Source collection | Original recordings | Archive MP4s | Notes |
+|---|---:|---:|---|
+| iPad archive (initial project) | 661 | 12 | Original archiving project |
+| ShravanSingingVideo | 62 | 13 | 57 SHA256-unique recordings |
+| ShravanSchoolPerformance | 58 | 12 | 51 SHA256-unique recordings |
+| BalVihar | 55 | 7 | 44 unique; 11 exact duplicates |
+| ShravanSportsVideos | 35 | 4 | 31 unique; 4 exact duplicates |
+| **Total** | **871** | **48** | Five source collections |
+
+For the two most recent collections, **90 originals** (75 unique recordings and 15 exact duplicates) were moved to their respective `ToBeDeleted` folders and SHA256-verified after relocation. The relocation journal was retained locally, not committed to GitHub.
+
+**Validation exception:** BalVihar Group 1 had an approximately 79.82-second duration discrepancy and did **not** pass automated duration validation. The output was manually played and accepted; the other six BalVihar groups and all four ShravanSportsVideos groups passed automated validation. Manual acceptance must not be represented as an automated pass.
+
+**Current status:** Five collections have been processed. A larger collection is pending; Python-based agentic orchestration and automatic crash recovery are future work, not implemented features. Original recordings, private manifests, generated media, and local journals should remain outside the repository.
 
 ---
 
