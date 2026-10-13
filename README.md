@@ -161,7 +161,7 @@ The repository also includes a newer SHA256-inventory-driven workflow, separate 
 
 V3 uses explicit plan approval before `RunAll`; its default parameters are 12 minutes and 5 clips per group, both configurable. Review each generated plan before approving it. Do not assume that a process exit or an existing output file alone proves successful playback.
 
-The dedicated relocation script has a `Preview` mode that checks expected inventory, archive outputs, manifest/plan hashes, and each source SHA256 before any move. In `Move` mode it journals relocation and checks SHA256 again at the destination. It **does not permanently delete files**. If interrupted during relocation, inspect the journal and destination folders before attempting any retry; it is not automatically crash-resumable.
+The committed relocation script remains **specific to BalVihar and ShravanSportsVideos**; it is not the ad hoc RandomVidoes move procedure. A generalized, tested replacement remains future work. The dedicated relocation script has a `Preview` mode that checks expected inventory, archive outputs, manifest/plan hashes, and each source SHA256 before any move. In `Move` mode it journals relocation and checks SHA256 again at the destination. It **does not permanently delete files**. If interrupted during relocation, inspect the journal and destination folders before attempting any retry; it is not automatically crash-resumable.
 
 ### Recorded project results (through October 13, 2026)
 
@@ -172,13 +172,13 @@ The dedicated relocation script has a `Preview` mode that checks expected invent
 | ShravanSchoolPerformance | 58 | 12 | 51 SHA256-unique recordings |
 | BalVihar | 55 | 7 | 44 unique; 11 exact duplicates |
 | ShravanSportsVideos | 35 | 4 | 31 unique; 4 exact duplicates |
-| **Total** | **871** | **48** | Five source collections |
+| RandomVidoes | 219 | 20 | 212 SHA256-unique; 7 exact duplicates; all 20 groups automatically validated and manually reviewed |\n| **Total** | **1,090** | **68** | Six source collections |
 
 For the two most recent collections, **90 originals** (75 unique recordings and 15 exact duplicates) were moved to their respective `ToBeDeleted` folders and SHA256-verified after relocation. The relocation journal was retained locally, not committed to GitHub.
 
 **Validation exception:** BalVihar Group 1 had an approximately 79.82-second duration discrepancy and did **not** pass automated duration validation. The output was manually played and accepted; the other six BalVihar groups and all four ShravanSportsVideos groups passed automated validation. Manual acceptance must not be represented as an automated pass.
 
-**Current status:** Five collections have been processed. A larger collection is pending; Python-based agentic orchestration and automatic crash recovery are future work, not implemented features. Original recordings, private manifests, generated media, and local journals should remain outside the repository.
+**RandomVidoes relocation (October 13, 2026):** After all 20 groups passed automated validation and manual playback review, all 219 source recordings were moved into `RandomVidoes/ToBeDeleted` using a one-time manifest-driven PowerShell move. A subsequent path/count check confirmed 219 of 219 files present, zero missing. No post-move SHA256 verification was performed for this collection; do not confuse the path/count check with hash verification. No originals were permanently deleted. The validated MP4 archives were left untouched.\n\n**Current status:** Six collections have been processed. Python-based agentic orchestration and automatic crash recovery are future work, not implemented features. Original recordings, private manifests, generated media, and local journals should remain outside the repository.
 
 ---
 
