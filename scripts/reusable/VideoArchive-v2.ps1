@@ -15,7 +15,7 @@ $root=(Resolve-Path -LiteralPath $SourceFolder -ErrorAction Stop).ProviderPath
 if (-not (Test-Path -LiteralPath $root -PathType Container)) { throw 'SourceFolder must be a directory.' }
 foreach($tool in @('ffmpeg','ffprobe')) { if (-not (Get-Command $tool -ErrorAction SilentlyContinue)) { throw "$tool not found in PATH." } }
 $work=Join-Path $root 'Archive_Work'; $manifestFile=Join-Path $work 'Manifest.csv'; $planFile=Join-Path $work 'GroupPlan.csv'; $settingsFile=Join-Path $work 'Settings.json'; $outFolder=Join-Path $work 'GroupedVideos'; $logFolder=Join-Path $work 'Logs'
-$extensions=@('.mp4','.mov','.m4v','.mkv','.avi','.wmv','.3gp')
+$extensions=@('.mp4','.mov','.m4v','.mkv','.avi','.wmv','.3gp','.mts','.m2ts','.mpeg','.mpg','.mod','.vob','.webm','.ts')
 function Probe([string]$path) {
     $raw= & ffprobe -v error -show_entries 'format=duration:stream=index,codec_type,codec_name,width,height,r_frame_rate,sample_rate,channels' -of json $path
     if ($LASTEXITCODE -ne 0) { throw "ffprobe failed: $path" }
