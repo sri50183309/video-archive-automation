@@ -141,6 +141,19 @@ Process all eligible normalized batches:
 
 Run the full operation only after testing a small batch and confirming sufficient disk space. Normalization re-encodes videos and can take significant time.
 
+## Agent V1 pilot — OneDrive-synced local discovery and staging
+
+Agent V1 currently has two working building blocks: `agent_v1/discover.py` (metadata-only inventory into SQLite and CSV) and `agent_v1/stage.py` (limited, sequential copy into local staging, SHA-256 verification, and SQLite tracking). **These are local Python scripts, not yet an autonomous agent with approvals, encoding, or a cloud API.**
+
+From the repository root on Windows, after `git pull --ff-only`:
+
+```powershell
+python .\agent_v1\discover.py --source "C:\Users\om\OneDrive\Video\RandomVideos\IndiaTrips" --work-dir "E:\LenovoLaptop\Personnel\Videos\IpadUpload - Copy\VideoAgent"
+python .\agent_v1\stage.py --source "C:\Users\om\OneDrive\Video\RandomVideos\IndiaTrips" --work-dir "E:\LenovoLaptop\Personnel\Videos\IpadUpload - Copy\VideoAgent" --limit 2
+```
+
+Staging creates `VideoAgent\Staging\IndiaTrips` and preserves subfolders. Reading OneDrive cloud-only placeholders can cause OneDrive to hydrate/download those selected source files. The staging script never deletes or moves OneDrive originals. Copies use `.partial` files and are promoted only after SHA-256 verification; previously verified staged copies are checked and skipped on later runs. If an unexpected final destination exists, the script stops instead of overwriting it. Failed or interrupted `.partial` files in the staging directory may be removed on retry. `--limit` controls newly staged files in that run; to continue later, run again with the desired limit. **Do not run full-batch staging until the two-file pilot is verified.**
+
 ## Standalone: Normalize and Merge Videos from a Folder
 
 Want to cherry-pick a few recordings (for example, Shravan's singing videos discovered in `RandomVidoes`) and combine them into **one MP4**, without preparing archive batches or running V2/V3?
