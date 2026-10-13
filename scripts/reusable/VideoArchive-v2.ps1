@@ -4,6 +4,7 @@ param(
     [Parameter(Mandatory=$true)][ValidateSet('Prepare','RunAll')][string]$Mode,
     [Parameter(Mandatory=$true)][string]$SourceFolder,
     [switch]$ApprovePlan,
+    [switch]$Quiet,
     [int]$TargetMinutes=12,
     [int]$MaxClips=5,
     [int]$CooldownSeconds=30
@@ -152,6 +153,11 @@ try {
                 $argsList.Add('-filter_complex'); $argsList.Add(($filters -join ';'))
                 foreach($arg in @('-map','[v]','-map','[a]','-c:v','libx264','-preset','fast','-crf','20','-c:a','aac','-b:a','256k','-ar','48000','-ac','2','-movflags','+faststart','-n',$partial)) { $argsList.Add($arg) }
                 Write-Host "Encoding group $($i+1)/$($groups.Count) ($($g.Count) recordings)"
+                if ($Quiet) {
+                    $argsList.Insert(0, '-nostats')
+                    $argsList.Insert(0, 'error')
+                    $argsList.Insert(0, '-loglevel')
+                }
                 & ffmpeg -hide_banner -nostdin @($argsList.ToArray())
                 if ($LASTEXITCODE -ne 0) { throw "ffmpeg encoding failed: $LASTEXITCODE" }
                 ValidateOutput $partial $expected
