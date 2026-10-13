@@ -141,6 +141,22 @@ Process all eligible normalized batches:
 
 Run the full operation only after testing a small batch and confirming sufficient disk space. Normalization re-encodes videos and can take significant time.
 
+## Standalone: Normalize and Merge Videos from a Folder
+
+Want to cherry-pick a few recordings (for example, Shravan's singing videos discovered in `RandomVidoes`) and combine them into **one MP4**, without preparing archive batches or running V2/V3?
+
+Copy the selected original clips into a separate folder, then run the standalone PowerShell script. It reads supported video files directly in that folder (not subfolders), **in filename order**, normalizes to 1920×1080 H.264 at 30 fps with aspect-ratio-preserving black bars, normalizes audio to AAC stereo at 48 kHz, supplies silence for clips without audio, and merges them into one MP4. The originals are not changed or deleted.
+
+```powershell
+& "E:\LenovoLaptop\Personnel\Videos\IpadUpload - Copy\VideoLists\scripts\reusable\Merge-SelectedVideos.ps1" `
+  -SourceFolder "E:\SelectedSingingVideos" `
+  -OutputFile "E:\MergedSingingVideos.mp4"
+```
+
+The output must be **outside** the input folder, and the output directory must already exist. The script refuses to overwrite an existing output, writes to a `.partial.mp4` file first, and performs a full FFmpeg decode check before promoting it to the requested filename. If the command fails, inspect the partial file before retrying. Check playback manually afterward. FFmpeg and FFprobe must be on `PATH`.
+
+**Practical tips:** Name clips `001_...`, `002_...` to control playback order. Use copies of selected clips from `ToBeDeleted` rather than moving or deleting those originals. Encoding is CPU-intensive and may take time on older laptops. Start with two short clips to verify the workflow before a larger merge.
+
 ## Key Takeaways
 
 1. **Start simple, then let failures guide the design.**
@@ -172,13 +188,16 @@ The committed relocation script remains **specific to BalVihar and ShravanSports
 | ShravanSchoolPerformance | 58 | 12 | 51 SHA256-unique recordings |
 | BalVihar | 55 | 7 | 44 unique; 11 exact duplicates |
 | ShravanSportsVideos | 35 | 4 | 31 unique; 4 exact duplicates |
-| RandomVidoes | 219 | 20 | 212 SHA256-unique; 7 exact duplicates; all 20 groups automatically validated and manually reviewed |\n| **Total** | **1,090** | **68** | Six source collections |
+| RandomVidoes | 219 | 20 | 212 SHA256-unique; 7 exact duplicates; all 20 groups automatically validated and manually reviewed |
+| **Total** | **1,090** | **68** | Six source collections |
 
 For the two most recent collections, **90 originals** (75 unique recordings and 15 exact duplicates) were moved to their respective `ToBeDeleted` folders and SHA256-verified after relocation. The relocation journal was retained locally, not committed to GitHub.
 
 **Validation exception:** BalVihar Group 1 had an approximately 79.82-second duration discrepancy and did **not** pass automated duration validation. The output was manually played and accepted; the other six BalVihar groups and all four ShravanSportsVideos groups passed automated validation. Manual acceptance must not be represented as an automated pass.
 
-**RandomVidoes relocation (October 13, 2026):** After all 20 groups passed automated validation and manual playback review, all 219 source recordings were moved into `RandomVidoes/ToBeDeleted` using a one-time manifest-driven PowerShell move. A subsequent path/count check confirmed 219 of 219 files present, zero missing. No post-move SHA256 verification was performed for this collection; do not confuse the path/count check with hash verification. No originals were permanently deleted. The validated MP4 archives were left untouched.\n\n**Current status:** Six collections have been processed. Python-based agentic orchestration and automatic crash recovery are future work, not implemented features. Original recordings, private manifests, generated media, and local journals should remain outside the repository.
+**RandomVidoes relocation (October 13, 2026):** After all 20 groups passed automated validation and manual playback review, all 219 source recordings were moved into `RandomVidoes/ToBeDeleted` using a one-time manifest-driven PowerShell move. A subsequent path/count check confirmed 219 of 219 files present, zero missing. No post-move SHA256 verification was performed for this collection; do not confuse the path/count check with hash verification. No originals were permanently deleted. The validated MP4 archives were left untouched.
+
+**Current status:** Six collections have been processed. Python-based agentic orchestration and automatic crash recovery are future work, not implemented features. Original recordings, private manifests, generated media, and local journals should remain outside the repository.
 
 ---
 
