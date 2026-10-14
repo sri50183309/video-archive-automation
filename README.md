@@ -215,3 +215,11 @@ For the two most recent collections, **90 originals** (75 unique recordings and 
 ---
 
 *Built as a practical personal automation project using PowerShell, FFmpeg, and iterative problem-solving.*
+
+### Field note: OneDrive hydration and unexpected C: disk pressure (October 2026)
+
+During Agent V1's IndiaTrips run, Windows C: reported just **16.91 GiB free** on an approximately 238 GiB drive, despite staging and encoding outputs being configured on E:. The initial investigation checked FFmpeg temporary directories (about 0.48 GiB combined) and the Windows pagefile (about 7.64 GiB allocated), but neither established the cause of the large disk footprint.
+
+The breakthrough came from examining **OneDrive Files On-Demand status icons** in File Explorer: green outlined checkmarks indicated locally available downloaded content; blue clouds indicated online-only content. Selecting **Free up space** on the OneDrive Video parent folder changed many icons from green to blue. After OneDrive processed the change, C: free space reached **about 111 GB**, a recovery of roughly **94 GB** compared with the initial reading. This recovery spans the wider OneDrive Video collection, not just the 4.55 GiB IndiaTrips subset. We cannot attribute the entire difference to Agent V1 or FFmpeg.
+
+**Operational lesson:** A workflow that copies cloud-synced videos from C: to an E: workspace may hydrate cloud-only sources onto C: first. Monitor both drives, verify that OneDrive has fully synced before releasing local content, and use **Free up space**, not Delete, to make synced files online-only. For future unattended jobs, include a C: free-space safety threshold and a post-staging OneDrive storage-management step. Never automatically delete cloud originals. This is a real-world troubleshooting milestone worth discussing in the eventual blog post.
