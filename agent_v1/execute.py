@@ -76,10 +76,16 @@ def main():
             print("READ ONLY: No approval recorded, no encoding started.")
             return
         if args.command == "approve":
-            if int(config["MaxClips"]) != 10 or int(config["TargetMinutes"]) != 30:
-                p.error("This pilot requires the agreed 10 clips / 30 minutes plan")
-            if len(groups) != 10 or len(clips) != 97:
-                p.error("IndiaTrips pilot expected 97 unique clips in 10 groups; review before approval")
+            # Generic approval: accept any internally consistent prepared V2 plan.
+            # The approval is bound to the exact manifest and group-plan hashes.
+            if not groups or not clips:
+                p.error("Cannot approve an empty archive plan")
+            if int(config["MaxClips"]) < 1 or int(config["TargetMinutes"]) < 1:
+                p.error("Invalid grouping parameters in Settings.json")
+            if any(int(g["Clips"]) < 1 or int(g["Clips"]) > int(config["MaxClips"]) for g in groups):
+                p.error("Group clip count exceeds configured MaxClips")
+            if sum(int(g["Clips"]) for g in groups) != len(clips):
+                p.error("Group clip totals do not match the manifest")
             with con:
                 con.execute("""INSERT INTO archive_approvals
                     (source_path,plan_hash,manifest_hash,approved_at,status,last_run_at,exit_code,log_path)
@@ -101,7 +107,7 @@ def main():
             p.error(f"V2 script missing: {script}")
         logs = work / "Logs"
         logs.mkdir(parents=True, exist_ok=True)
-        logfile = logs / ("IndiaTrips_run_" + datetime.now().strftime("%Y%m%d_%H%M%S") + ".log")
+        logfile = logs / (source.name + "_run_" + datetime.now().strftime("%Y%m%d_%H%M%S") + ".log")
         command = ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass",
                    "-File", str(script), "-Mode", "RunAll", "-SourceFolder", str(source), "-ApprovePlan"]
         with con:
